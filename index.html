@@ -292,6 +292,7 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
         <button class="btn" onclick="salvarConfig()">✓ Salvar Configurações</button>
         <button class="btn warn" onclick="recalcularTodos()">⟳ Recalcular Todos</button>
         <button class="btn sec" onclick="migrar()">🔧 Migrar Estrutura</button>
+        <button class="btn danger" onclick="instalarDoZero()">🗑️ Instalar do Zero</button>
       </div>
     </div>
   </div>
@@ -473,6 +474,13 @@ async function recalcularTodos(){
   if(r?.ok){toast(r.msg);carregarRegistros();}else if(r)toast(r.msg,true);
 }
 
+async function instalarDoZero(){
+  if(!confirm('⚠️ Isso vai APAGAR todos os registros e batidas (feriados e config são mantidos). Tem certeza?'))return;
+  if(!confirm('Confirmação final: apagar TODOS os registros de ponto?'))return;
+  const r=await api({action:'instalarDoZero'});
+  if(r?.ok){toast(r.msg);carregarRegistros();}else if(r)toast(r.msg,true);
+}
+
 async function migrar(){
   const r=await api({action:'migrar'});
   if(r?.ok)toast(r.msg);else if(r)toast(r.msg,true);
@@ -574,8 +582,8 @@ function abrirModal(reg){
   document.getElementById('f-obs').value=reg?.observacao||'';
   document.getElementById('f-abono-tipo').value=reg?.tipoAbono||'nenhum';
   document.getElementById('f-abono-obs').value=reg?.obsAbono||'';
-  document.getElementById('f-abono-ini').value='';
-  document.getElementById('f-abono-fim').value='';
+  document.getElementById('f-abono-ini').value=reg?.abonoInicio||'';
+  document.getElementById('f-abono-fim').value=reg?.abonoFim||'';
 
   if(reg){
     document.getElementById('f-data').value=reg.data;
