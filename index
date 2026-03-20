@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ponto Certo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0d0f14;--surface:#151820;--card:#1c2030;--border:#2a3045;
+  --accent:#00e5a0;--accent2:#ff6b35;--warn:#ffcc44;--danger:#ff4466;
+  --text:#e8ecf4;--muted:#6b7590;--radius:12px;
+  --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:.5;}
+
+#setup-banner{background:linear-gradient(90deg,var(--accent2),var(--warn));color:#000;
+  text-align:center;padding:.65rem 1rem;font-family:var(--mono);font-size:.78rem;
+  font-weight:700;letter-spacing:.05em;position:relative;z-index:100;}
+#setup-banner button{background:#000;color:#fff;border:none;border-radius:6px;
+  padding:.25rem .75rem;font-family:var(--mono);font-size:.75rem;cursor:pointer;
+  margin-left:1rem;transition:opacity .2s;}
+#setup-banner button:hover{opacity:.8;}
+
+header{position:relative;z-index:10;display:flex;align-items:center;
+  justify-content:space-between;padding:1.25rem 2rem;
+  border-bottom:1px solid var(--border);backdrop-filter:blur(12px);}
+.logo{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(135deg,var(--accent),#00b4d8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo span{font-family:var(--mono);font-size:.7rem;font-weight:400;
+  -webkit-text-fill-color:var(--muted);display:block;letter-spacing:.1em;}
+
+.gas-row{display:flex;gap:.5rem;align-items:center;}
+#gas-url{background:var(--card);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:.4rem .75rem;font-family:var(--mono);font-size:.72rem;
+  width:320px;outline:none;transition:border-color .2s;}
+#gas-url:focus{border-color:var(--accent);}
+.btn-icon{background:var(--card);border:1px solid var(--border);color:var(--accent);
+  border-radius:8px;padding:.4rem .7rem;cursor:pointer;font-size:.9rem;transition:all .2s;}
+.btn-icon:hover{background:var(--accent);color:#000;}
+
+.container{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1;}
+
+.tabs{display:flex;gap:.25rem;margin-bottom:2rem;border-bottom:1px solid var(--border);padding-bottom:.1rem;}
+.tab{background:none;border:none;color:var(--muted);font-family:var(--sans);
+  font-size:.9rem;font-weight:600;padding:.6rem 1.2rem;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab:hover:not(.active){color:var(--text);}
+.tab-content{display:none;}
+.tab-content.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+.month-nav{display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;}
+.month-nav h2{font-size:1.5rem;font-weight:800;letter-spacing:-.03em;
+  min-width:200px;text-align:center;}
+.btn-round{background:var(--card);border:1px solid var(--border);color:var(--text);
+  border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1rem;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.btn-round:hover{border-color:var(--accent);color:var(--accent);}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem;}
+.s-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1.25rem;position:relative;overflow:hidden;}
+.s-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.s-card.green::before{background:var(--accent);}
+.s-card.orange::before{background:var(--accent2);}
+.s-card.yellow::before{background:var(--warn);}
+.s-card.red::before{background:var(--danger);}
+.s-card.blue::before{background:#00b4d8;}
+.s-card .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem;}
+.s-card .value{font-family:var(--mono);font-size:1.4rem;font-weight:700;}
+.s-card .sub{font-size:.72rem;color:var(--muted);margin-top:.25rem;}
+
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.85rem;}
+thead th{background:var(--surface);padding:.75rem 1rem;text-align:left;
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);font-family:var(--mono);border-bottom:1px solid var(--border);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface);}
+tbody td{padding:.7rem 1rem;font-family:var(--mono);font-size:.82rem;}
+.diff-pos{color:var(--accent);}
+.diff-neg{color:var(--danger);}
+.diff-zero{color:var(--muted);}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;
+  font-size:.68rem;font-weight:700;font-family:var(--mono);letter-spacing:.05em;}
+.badge-sex{background:rgba(0,229,160,.12);color:var(--accent);}
+.badge-fer{background:rgba(255,107,53,.12);color:var(--accent2);}
+
+/* Batidas chip list */
+.batidas-chips{display:flex;flex-wrap:wrap;gap:.3rem;}
+.chip{display:inline-flex;align-items:center;gap:.25rem;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:.15rem .5rem;font-size:.72rem;font-family:var(--mono);}
+.chip.entrada{border-color:rgba(0,229,160,.3);color:var(--accent);}
+.chip.saida{border-color:rgba(255,100,100,.3);color:#ff8888;}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1rem;}
+.field label{display:block;font-size:.72rem;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);margin-bottom:.4rem;}
+.field input,.field textarea{width:100%;background:var(--card);border:1px solid var(--border);
+  color:var(--text);border-radius:8px;padding:.55rem .8rem;
+  font-family:var(--mono);font-size:.85rem;outline:none;transition:border-color .2s;}
+.field input:focus{border-color:var(--accent);}
+.field textarea{resize:vertical;min-height:56px;}
+
+/* Batidas dinâmicas */
+#batidas-container{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem;}
+.batida-row{display:flex;align-items:center;gap:.6rem;}
+.batida-seq{font-family:var(--mono);font-size:.72rem;color:var(--muted);
+  min-width:70px;text-align:right;}
+.batida-row input[type=time]{background:var(--card);border:1px solid var(--border);
+  color:var(--text);border-radius:8px;padding:.5rem .75rem;
+  font-family:var(--mono);font-size:.88rem;outline:none;transition:border-color .2s;}
+.batida-row input[type=time]:focus{border-color:var(--accent);}
+.batida-tipo{font-size:.7rem;font-family:var(--mono);padding:.2rem .5rem;
+  border-radius:4px;min-width:58px;text-align:center;}
+.batida-tipo.e{background:rgba(0,229,160,.12);color:var(--accent);}
+.batida-tipo.s{background:rgba(255,100,100,.12);color:#ff8888;}
+.btn-rem{background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:1rem;transition:color .2s;padding:.2rem;}
+.btn-rem:hover{color:var(--danger);}
+.btn-add{background:var(--surface);border:1px dashed var(--border);
+  color:var(--muted);border-radius:8px;padding:.5rem 1rem;
+  font-family:var(--mono);font-size:.8rem;cursor:pointer;
+  transition:all .2s;width:100%;}
+.btn-add:hover{border-color:var(--accent);color:var(--accent);}
+
+/* Preview */
+#preview-box{background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;
+  font-family:var(--mono);font-size:.78rem;color:var(--muted);
+  min-height:60px;}
+#preview-box .ph{font-size:1rem;margin-bottom:.3rem;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:.4rem;background:var(--accent);
+  color:#000;border:none;border-radius:8px;padding:.6rem 1.25rem;
+  font-family:var(--sans);font-size:.88rem;font-weight:700;cursor:pointer;
+  transition:all .2s;letter-spacing:.02em;}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn.sec{background:var(--card);color:var(--text);border:1px solid var(--border);}
+.btn.sec:hover{border-color:var(--accent);color:var(--accent);}
+.btn.danger{background:var(--danger);color:#fff;}
+.btn.sm{padding:.35rem .75rem;font-size:.78rem;}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(4px);z-index:200;display:none;place-items:center;}
+.overlay.open{display:grid;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:2rem;width:min(580px,94vw);max-height:90vh;overflow-y:auto;
+  animation:popIn .25s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:none;}}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;}
+.modal-header h3{font-size:1.15rem;font-weight:800;}
+.close-btn{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;}
+.close-btn:hover{color:var(--text);}
+
+/* Toast */
+#toast{position:fixed;bottom:2rem;right:2rem;z-index:999;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:.85rem 1.25rem;font-size:.85rem;font-family:var(--mono);
+  transform:translateY(120%);transition:transform .3s ease;
+  max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+#toast.show{transform:translateY(0);}
+#toast.ok{border-left:3px solid var(--accent);}
+#toast.err{border-left:3px solid var(--danger);}
+
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted);}
+.empty .icon{font-size:2.5rem;margin-bottom:.75rem;}
+
+.feriado-list{display:flex;flex-direction:column;gap:.6rem;}
+.feriado-item{display:flex;align-items:center;justify-content:space-between;
+  background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.65rem 1rem;}
+.feriado-item .date{font-family:var(--mono);font-size:.82rem;color:var(--accent2);}
+.feriado-item .desc{font-size:.85rem;margin-left:.75rem;flex:1;}
+
+.progress-wrap{margin:.75rem 0;background:var(--surface);border-radius:20px;height:8px;overflow:hidden;}
+.progress-bar{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--accent),#00b4d8);transition:width .6s ease;}
+.progress-bar.over{background:linear-gradient(90deg,var(--accent2),var(--danger));}
+
+.section-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);margin-bottom:.6rem;display:block;}
+
+@media(max-width:640px){
+  header{flex-direction:column;gap:1rem;align-items:flex-start;}
+  #gas-url{width:100%;}
+  .container{padding:1rem;}
+}
+</style>
+</head>
+<body>
+
+<div id="setup-banner">
+  ⚙️ Configure a URL do Google Apps Script antes de usar.
+  <button onclick="runSetup()">Executar Setup</button>
+</div>
+
+<header>
+  <div>
+    <div class="logo">Ponto Certo <span>▸ CONTROLE DE JORNADA v2</span></div>
+  </div>
+  <div class="gas-row">
+    <input id="gas-url" type="url" placeholder="https://script.google.com/macros/s/AKfycbys5XElLe1p0PbH5EyzMTgRkA6_xqeelxJgGRXE4YAT3qYPBMlkKbkiraUJJd4FgJzV/exec"/>
+    <button class="btn-icon" title="Salvar URL" onclick="saveGasUrl()">💾</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('registros',this)">📋 Registros</button>
+    <button class="tab" onclick="switchTab('resumo',this)">📊 Resumo do Mês</button>
+    <button class="tab" onclick="switchTab('feriados',this)">🗓️ Feriados</button>
+  </div>
+
+  <!-- TAB REGISTROS -->
+  <div id="tab-registros" class="tab-content active">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+      <div class="month-nav">
+        <button class="btn-round" onclick="mudaMes(-1)">‹</button>
+        <h2 id="mes-titulo"></h2>
+        <button class="btn-round" onclick="mudaMes(1)">›</button>
+      </div>
+      <button class="btn" onclick="abrirModal()">＋ Novo Registro</button>
+    </div>
+    <div id="registros-table">
+      <div class="empty"><div class="icon">⏱</div><p>Nenhum registro neste mês.</p></div>
+    </div>
+  </div>
+
+  <!-- TAB RESUMO -->
+  <div id="tab-resumo" class="tab-content">
+    <div class="month-nav" style="margin-bottom:1.5rem;">
+      <button class="btn-round" onclick="mudaMes(-1);carregarResumo()">‹</button>
+      <h2 id="resumo-titulo"></h2>
+      <button class="btn-round" onclick="mudaMes(1);carregarResumo()">›</button>
+    </div>
+    <div id="resumo-content">
+      <div class="empty"><div class="icon">📊</div><p>Selecione um mês para ver o resumo.</p></div>
+    </div>
+  </div>
+
+  <!-- TAB FERIADOS -->
+  <div id="tab-feriados" class="tab-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+      <h2 style="font-size:1.2rem;font-weight:700;">Feriados Cadastrados</h2>
+      <button class="btn" onclick="abrirModalFeriado()">＋ Novo Feriado</button>
+    </div>
+    <div id="feriados-list">
+      <div class="empty"><div class="icon">🗓️</div><p>Nenhum feriado cadastrado.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRO -->
+<div class="overlay" id="modal-overlay" onclick="fecharModalBg(event,'modal-overlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-titulo">Novo Registro de Ponto</h3>
+      <button class="close-btn" onclick="fecharModal()">✕</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="field">
+        <label>Data *</label>
+        <input type="date" id="f-data" onchange="atualizarTipoBatidas();calcPreview()"/>
+      </div>
+      <div class="field">
+        <label>Observação</label>
+        <input type="text" id="f-obs" placeholder="Opcional..."/>
+      </div>
+    </div>
+
+    <span class="section-label">Batidas do dia — 1ª entrada, 2ª saída, 3ª entrada...</span>
+    <div id="batidas-container"></div>
+    <button class="btn-add" onclick="adicionarBatida()">＋ Adicionar Batida</button>
+
+    <div id="preview-box" style="margin-top:1rem;">
+      <div style="color:var(--muted);font-size:.78rem;">Preencha as batidas para ver o cálculo.</div>
+    </div>
+
+    <input type="hidden" id="f-id"/>
+    <div style="display:flex;gap:.75rem;margin-top:1.25rem;">
+      <button class="btn" onclick="salvarRegistro()">✓ Salvar</button>
+      <button class="btn sec" onclick="fecharModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FERIADO -->
+<div class="overlay" id="modal-feriado-overlay" onclick="fecharModalBg(event,'modal-feriado-overlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Cadastrar Feriado</h3>
+      <button class="close-btn" onclick="document.getElementById('modal-feriado-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Data *</label>
+        <input type="date" id="ff-data"/>
+      </div>
+      <div class="field">
+        <label>Descrição *</label>
+        <input type="text" id="ff-desc" placeholder="Ex: Natal"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+      <button class="btn" onclick="salvarFeriado()">✓ Salvar</button>
+      <button class="btn sec" onclick="document.getElementById('modal-feriado-overlay').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Estado ──
+let GAS_URL = localStorage.getItem('ponto_gas_url') || '';
+let mesAtual = new Date(); mesAtual.setDate(1);
+let _registrosCache = [];
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  if (GAS_URL) {
+    document.getElementById('gas-url').value = GAS_URL;
+    document.getElementById('setup-banner').style.display = 'none';
+  }
+  atualizarTitulos();
+  carregarRegistros();
+  carregarFeriados();
+});
+
+// ── Utilitários ──
+function saveGasUrl() {
+  GAS_URL = document.getElementById('gas-url').value.trim();
+  if (!GAS_URL) { toast('Cole a URL do GAS primeiro.', true); return; }
+  localStorage.setItem('ponto_gas_url', GAS_URL);
+  document.getElementById('setup-banner').style.display = 'none';
+  toast('URL salva!');
+}
+
+function mesStr(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function mesNome(d) { return d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); }
+
+function atualizarTitulos() {
+  const n = mesNome(mesAtual).replace(/^\w/,c=>c.toUpperCase());
+  document.getElementById('mes-titulo').textContent = n;
+  const rt = document.getElementById('resumo-titulo');
+  if (rt) rt.textContent = n;
+}
+
+function mudaMes(delta) {
+  mesAtual.setMonth(mesAtual.getMonth()+delta);
+  atualizarTitulos();
+  carregarRegistros();
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab==='resumo') carregarResumo();
+  if (tab==='feriados') carregarFeriados();
+}
+
+function toast(msg, err=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show '+(err?'err':'ok');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(()=>el.classList.remove('show'),3500);
+}
+
+function fecharModalBg(e, id) {
+  if (e.target === document.getElementById(id))
+    document.getElementById(id).classList.remove('open');
+}
+
+// ── API ──
+async function api(body) {
+  if (!GAS_URL) { toast('Configure a URL do GAS!', true); return null; }
+  try {
+    const r = await fetch(GAS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify(body)
+    });
+    return await r.json();
+  } catch(e) { toast('Erro de conexão: '+e.message, true); return null; }
+}
+
+async function runSetup() {
+  if (!GAS_URL) { toast('Cole a URL do GAS primeiro!', true); return; }
+  const r = await api({action:'setup'});
+  if (r?.ok) toast('Setup concluído! Planilha pronta.');
+  else if (r) toast(r.msg, true);
+}
+
+// ── Conversão ──
+function minParaHora(min) {
+  if (min==null||isNaN(min)) return '--:--';
+  const s=min<0?'-':'', a=Math.abs(min);
+  return s+String(Math.floor(a/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0');
+}
+
+function horaParaMin(hhmm) {
+  if (!hhmm) return null;
+  const [h,m]=hhmm.split(':'); return +h*60+ +m;
+}
+
+// ── Batidas dinâmicas ──
+let _batidas = []; // array de strings 'HH:MM'
+
+function adicionarBatida(valor='') {
+  _batidas.push(valor);
+  renderizarBatidas();
+}
+
+function removerBatida(idx) {
+  _batidas.splice(idx, 1);
+  renderizarBatidas();
+  calcPreview();
+}
+
+function renderizarBatidas() {
+  const c = document.getElementById('batidas-container');
+  c.innerHTML = '';
+  _batidas.forEach((val, idx) => {
+    const isEntrada = idx % 2 === 0;
+    const tipoLabel = isEntrada ? 'ENTRADA' : 'SAÍDA';
+    const tipoClass = isEntrada ? 'e' : 's';
+    const row = document.createElement('div');
+    row.className = 'batida-row';
+    row.innerHTML = `
+      <span class="batida-seq">${idx+1}ª batida</span>
+      <input type="time" value="${val}" data-idx="${idx}"
+        onchange="_batidas[${idx}]=this.value;calcPreview()"
+        oninput="_batidas[${idx}]=this.value;calcPreview()"/>
+      <span class="batida-tipo ${tipoClass}">${tipoLabel}</span>
+      ${_batidas.length > 2 ? `<button class="btn-rem" onclick="removerBatida(${idx})" title="Remover">✕</button>` : ''}
+    `;
+    c.appendChild(row);
+  });
+}
+
+function atualizarTipoBatidas() { renderizarBatidas(); }
+
+function calcPreview() {
+  const box = document.getElementById('preview-box');
+  const data = document.getElementById('f-data').value;
+  const batValidas = _batidas.filter(b=>b&&b.trim());
+
+  if (batValidas.length < 2) {
+    box.innerHTML = '<div style="color:var(--muted);">Adicione pelo menos 2 batidas para calcular.</div>';
+    return;
+  }
+
+  const mins = batValidas.map(horaParaMin).filter(m=>m!==null).sort((a,b)=>a-b);
+  let total = 0, almoco = 0;
+
+  for (let i=0; i+1<mins.length; i+=2) {
+    total += mins[i+1]-mins[i];
+    if (i+2<mins.length) {
+      const ini=mins[i+1], fim=mins[i+2], dur=fim-ini;
+      if (ini>=11*60 && ini<14*60) almoco+=dur;
+    }
+  }
+
+  let padrao = 8*60;
+  if (data) {
+    const dow = new Date(data+'T12:00').getDay();
+    if (dow===5) padrao=7*60;
+  }
+  const dif = total - padrao;
+  const difStr = (dif>=0?'+':'')+minParaHora(dif);
+  const difColor = dif>0?'var(--accent)':dif<0?'var(--danger)':'var(--muted)';
+
+  // Montar linha do tempo visual
+  const pares = [];
+  for (let i=0;i+1<mins.length;i+=2) {
+    pares.push(`<span style="color:var(--accent)">${minParaHora(mins[i])}</span>→<span style="color:#ff8888">${minParaHora(mins[i+1])}</span>`);
+  }
+  if (mins.length%2!==0) pares.push(`<span style="color:var(--warn)">${minParaHora(mins[mins.length-1])}</span><span style="color:var(--warn)"> (sem par)</span>`);
+
+  box.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem;font-size:.75rem;">
+      ${pares.map(p=>`<span style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:.2rem .5rem;">${p}</span>`).join('')}
+    </div>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+      <span>⏱ <b>${minParaHora(total)}</b> trabalhado</span>
+      ${almoco>0?`<span>🍽 <b>${minParaHora(almoco)}</b> almoço</span>`:''}
+      <span>📋 <b>${minParaHora(padrao)}</b> padrão</span>
+      <span style="color:${difColor};">⚡ <b>${difStr}</b> saldo</span>
+    </div>`;
+}
+
+// ── Modal Registro ──
+function abrirModal(reg) {
+  document.getElementById('f-id').value = reg?.id || '';
+  document.getElementById('modal-titulo').textContent = reg ? 'Editar Registro' : 'Novo Registro de Ponto';
+  document.getElementById('f-obs').value = reg?.observacao || '';
+
+  if (reg) {
+    document.getElementById('f-data').value = reg.data;
+    _batidas = reg.batidas ? [...reg.batidas] : ['08:00','18:00'];
+  } else {
+    // Default hoje
+    const hoje = new Date();
+    const y=hoje.getFullYear(), m=String(hoje.getMonth()+1).padStart(2,'0'), d=String(hoje.getDate()).padStart(2,'0');
+    document.getElementById('f-data').value = `${y}-${m}-${d}`;
+    const isSex = hoje.getDay()===5;
+    _batidas = ['08:00','12:00','13:00', isSex?'17:00':'18:00'];
+  }
+
+  renderizarBatidas();
+  calcPreview();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function salvarRegistro() {
+  const data = document.getElementById('f-data').value;
+  if (!data) { toast('Informe a data!', true); return; }
+
+  const batValidas = _batidas.filter(b=>b&&b.trim());
+  if (batValidas.length < 2) { toast('Adicione pelo menos 2 batidas!', true); return; }
+  if (batValidas.length % 2 !== 0) { toast('Número de batidas deve ser par (entrada e saída)!', true); return; }
+
+  const r = await api({
+    action:'salvarRegistro',
+    id: document.getElementById('f-id').value || null,
+    data, batidas: batValidas,
+    observacao: document.getElementById('f-obs').value
+  });
+
+  if (r?.ok) { toast(r.msg); fecharModal(); carregarRegistros(); }
+  else if (r) toast(r.msg, true);
+}
+
+function editarRegistro(id) {
+  const reg = _registrosCache.find(r=>r.id===id);
+  if (reg) abrirModal(reg);
+}
+
+async function deletarRegistro(id) {
+  if (!confirm('Deletar este registro?')) return;
+  const r = await api({action:'deletarRegistro', id});
+  if (r?.ok) { toast('Deletado!'); carregarRegistros(); }
+  else if (r) toast(r.msg, true);
+}
+
+// ── Carregar Registros ──
+async function carregarRegistros() {
+  const r = await api({action:'listarRegistros', mes:mesStr(mesAtual)});
+  const c = document.getElementById('registros-table');
+  if (!r?.ok) { c.innerHTML='<div class="empty"><div class="icon">⚠️</div><p>Erro ao carregar.</p></div>'; return; }
+
+  _registrosCache = r.data;
+  if (!r.data.length) {
+    c.innerHTML='<div class="empty"><div class="icon">⏱</div><p>Nenhum registro neste mês.</p></div>';
+    return;
+  }
+
+  const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const sorted = [...r.data].sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+
+  c.innerHTML = `
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>Data</th><th>Dia</th><th>Batidas</th>
+      <th>Trabalhado</th><th>Padrão</th><th>Saldo</th><th>Obs.</th><th></th>
+    </tr></thead>
+    <tbody>
+    ${sorted.map(reg=>{
+      const dow = new Date(String(reg.data)+'T12:00').getDay();
+      const isSex = dow===5;
+      const dif = Number(reg.diferencaMinutos);
+      const difClass = dif>0?'diff-pos':dif<0?'diff-neg':'diff-zero';
+      const difStr = (dif>0?'+':'')+minParaHora(dif);
+      const batidas = reg.batidas||[];
+      const chips = batidas.map((b,i)=>`<span class="chip ${i%2===0?'entrada':'saida'}">${b}</span>`).join('');
+      return `<tr>
+        <td>${String(reg.data)}</td>
+        <td>${dias[dow]}${isSex?' <span class="badge badge-sex">Sex</span>':''}</td>
+        <td><div class="batidas-chips">${chips||'—'}</div></td>
+        <td>${minParaHora(Number(reg.totalMinutos))}</td>
+        <td>${minParaHora(Number(reg.padraoMinutos))}</td>
+        <td class="${difClass}">${difStr}</td>
+        <td style="color:var(--muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${reg.observacao||''}</td>
+        <td style="display:flex;gap:.3rem;">
+          <button class="btn sm sec" onclick="editarRegistro('${reg.id}')">✏</button>
+          <button class="btn sm danger" onclick="deletarRegistro('${reg.id}')">✕</button>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ── Resumo ──
+async function carregarResumo() {
+  const c = document.getElementById('resumo-content');
+  c.innerHTML='<div class="empty"><div class="icon">⏳</div><p>Calculando...</p></div>';
+  const r = await api({action:'resumoMes', mes:mesStr(mesAtual)});
+  if (!r?.ok) { c.innerHTML='<div class="empty"><div class="icon">⚠️</div><p>Erro ao calcular.</p></div>'; return; }
+
+  const pct = r.padraoTotalMin>0 ? Math.min(100,Math.round(r.trabalhadoMin/r.padraoTotalMin*100)) : 0;
+  const over = r.trabalhadoMin>r.padraoTotalMin;
+  const difClass = r.diferencaMin>=0?'green':'red';
+  const difStr = (r.diferencaMin>0?'+':'')+r.diferencaHora;
+
+  c.innerHTML=`
+  <div class="summary">
+    <div class="s-card blue"><div class="label">Dias Úteis</div>
+      <div class="value">${r.diasUteisNoMes}</div><div class="sub">excl. feriados/fins de semana</div></div>
+    <div class="s-card yellow"><div class="label">Dias Registrados</div>
+      <div class="value">${r.diasRegistrados}</div><div class="sub">de ${r.diasUteisNoMes} úteis</div></div>
+    <div class="s-card orange"><div class="label">Horas Devidas</div>
+      <div class="value">${r.padraoTotalHora}</div><div class="sub">carga do mês</div></div>
+    <div class="s-card green"><div class="label">Horas Trabalhadas</div>
+      <div class="value">${r.trabalhadoHora}</div><div class="sub">${pct}% da carga</div></div>
+    <div class="s-card ${difClass}"><div class="label">Saldo do Mês</div>
+      <div class="value">${difStr}</div>
+      <div class="sub">${r.diferencaMin>=0?'✓ banco positivo':'⚠ banco negativo'}</div></div>
+  </div>
+  <div style="margin-bottom:1.5rem;">
+    <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.4rem;">
+      <span>Progresso da carga horária</span><span>${pct}%</span></div>
+    <div class="progress-wrap"><div class="progress-bar ${over?'over':''}" style="width:${pct}%"></div></div>
+  </div>
+  ${r.feriadosNoMes?.length ? `
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;">
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.6rem;">Feriados neste mês</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+      ${r.feriadosNoMes.map(f=>`<span class="badge badge-fer">${f}</span>`).join('')}
+    </div>
+  </div>` : ''}`;
+}
+
+// ── Feriados ──
+async function carregarFeriados() {
+  const r = await api({action:'listarFeriados'});
+  const c = document.getElementById('feriados-list');
+  if (!r?.ok || !r.data.length) {
+    c.innerHTML='<div class="empty"><div class="icon">🗓️</div><p>Nenhum feriado cadastrado.</p></div>';
+    return;
+  }
+  const sorted = [...r.data].sort((a,b)=>a.data.localeCompare(b.data));
+  c.innerHTML=`<div class="feriado-list">${sorted.map(f=>`
+    <div class="feriado-item">
+      <span class="date">${f.data}</span>
+      <span class="desc">${f.descricao}</span>
+      <button class="btn sm danger" onclick="deletarFeriado('${f.data}')">✕</button>
+    </div>`).join('')}</div>`;
+}
+
+function abrirModalFeriado() {
+  document.getElementById('ff-data').value='';
+  document.getElementById('ff-desc').value='';
+  document.getElementById('modal-feriado-overlay').classList.add('open');
+}
+
+async function salvarFeriado() {
+  const data=document.getElementById('ff-data').value;
+  const desc=document.getElementById('ff-desc').value;
+  if (!data||!desc) { toast('Preencha data e descrição!',true); return; }
+  const r=await api({action:'salvarFeriado',data,descricao:desc});
+  if (r?.ok) { toast(r.msg); document.getElementById('modal-feriado-overlay').classList.remove('open'); carregarFeriados(); }
+  else if (r) toast(r.msg,true);
+}
+
+async function deletarFeriado(data) {
+  if (!confirm('Remover feriado '+data+'?')) return;
+  const r=await api({action:'deletarFeriado',data});
+  if (r?.ok) { toast('Feriado removido!'); carregarFeriados(); }
+  else if (r) toast(r.msg,true);
+}
+</script>
+</body>
+</html>
