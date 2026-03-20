@@ -684,6 +684,25 @@ function calcPreview(){
 
 // ── Modal ──
 function abrirModal(reg){
+  // Reset atestado
+  _atestadoBase64 = null; _atestadoMime = null; _atestadoExt = null; _atestadoDriveUrl = null;
+  const labelEl = document.getElementById('atestado-preview-label');
+  if (labelEl) labelEl.textContent = 'Toque para selecionar foto ou PDF';
+
+  // Mostrar link do atestado salvo se existir
+  const obsAbono = reg?.obsAbono || '';
+  const linkEl = document.getElementById('atestado-link');
+  if (linkEl) {
+    const driveIdx = obsAbono.indexOf('https://drive.google.com/');
+    if (driveIdx >= 0) {
+      const driveUrl = obsAbono.substring(driveIdx).split(' ')[0].split('|')[0].trim();
+      document.getElementById('atestado-link-url').href = driveUrl;
+      linkEl.style.display = 'block';
+    } else {
+      linkEl.style.display = 'none';
+    }
+  }
+
   document.getElementById('f-id').value=reg?.id||'';
   document.getElementById('modal-titulo').textContent=reg?'Editar Registro':'Novo Registro de Ponto';
   document.getElementById('f-obs').value=reg?.observacao||'';
@@ -710,12 +729,38 @@ function abrirModal(reg){
 async function salvarRegistro(){
   const data=document.getElementById('f-data').value;
   if(!data){toast('Informe a data!',true);return;}
+  // Salvar atestado se houver
+  const tipoAb=document.getElementById('f-abono-tipo').value;
+  if(_atestadoBase64 && data && tipoAb!=='nenhum'){
+    await salvarAtestadoSeExistir(data, tipoAb);
+  }
+  if(_atestadoDriveUrl){
+    const obsEl=document.getElementById('f-abono-obs');
+    if(!obsEl.value.includes('drive.google'))
+      obsEl.value=(obsEl.value?obsEl.value+' | ':'')+_atestadoDriveUrl;
+  }
   const bv=_batidas.filter(b=>b&&b.trim());
   const tipo=document.getElementById('f-abono-tipo').value;
   const parcial=tipo==='parcial'||tipo==='outro_parcial';
 
   if(bv.length<2&&tipo==='nenhum'){toast('Adicione pelo menos 2 batidas!',true);return;}
   if(bv.length>0&&bv.length%2!==0){toast('Número de batidas deve ser par!',true);return;}
+
+  // Upload atestado se houver
+  let obsAbonoFinal = document.getElementById('f-abono-obs').value;
+  if(_atestadoBase64 && tipo !== 'nenhum'){
+    const ra = await api({action:'salvarAtestado', data, tipoAbono:tipo,
+      base64:_atestadoBase64, mimeType:_atestadoMime, extensao:_atestadoExt});
+    if(ra?.ok){
+      _atestadoDriveUrl = ra.viewUrl;
+      if(!obsAbonoFinal.includes('drive.google'))
+        obsAbonoFinal = (obsAbonoFinal ? obsAbonoFinal + ' | ' : '') + ra.viewUrl;
+    } else toast('Atestado não salvo: '+(ra?.msg||'erro'), true);
+  }
+  // Reset atestado
+  _atestadoBase64=null;_atestadoMime=null;_atestadoExt=null;_atestadoDriveUrl=null;
+  const labelEl=document.getElementById('atestado-preview-label');
+  if(labelEl) labelEl.textContent='Toque para selecionar foto ou PDF';
 
   const r=await api({
     action:'salvarRegistro',
@@ -775,7 +820,8 @@ async function carregarRegistros(){
         <td>${minParaHora(Number(reg.padraoMinutos))}</td>
         <td class="${difClass}">${(dif>0?'+':'')+minParaHora(dif)}</td>
         <td style="color:var(--muted);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${reg.observacao||''}</td>
-        <td style="display:flex;gap:.28rem;">
+        <td style="display:flex;gap:.28rem;flex-wrap:wrap;">
+          ${reg.obsAbono&&reg.obsAbono.includes('drive.google')?`<a class="btn sm sec" href="${reg.obsAbono.match(/https:\/\/drive\.google\.com\/[^\s|]*/)?.[0]||'#'}" target="_blank" title="Ver atestado">📎</a>`:''}
           <button class="btn sm sec" onclick="editarRegistro('${reg.id}')">✏</button>
           <button class="btn sm danger" onclick="deletarRegistro('${reg.id}')">✕</button>
         </td>
@@ -1067,47 +1113,8 @@ async function salvarAtestadoSeExistir(data, tipoAbono) {
   return null;
 }
 
-// Hook no salvarRegistro para incluir atestado
-const _origSalvarRegistro = salvarRegistro;
-async function salvarRegistro() {
-  // Salvar atestado antes se houver
-  const data = document.getElementById('f-data').value;
-  const tipo = document.getElementById('f-abono-tipo').value;
-  if (_atestadoBase64 && data && tipo !== 'nenhum') {
-    await salvarAtestadoSeExistir(data, tipo);
-  }
-  // Incluir URL do atestado na obsAbono se salvou
-  if (_atestadoDriveUrl) {
-    const obsEl = document.getElementById('f-abono-obs');
-    if (!obsEl.value.includes('drive.google')) {
-      obsEl.value = (obsEl.value ? obsEl.value + ' | ' : '') + _atestadoDriveUrl;
-    }
-  }
-  await _origSalvarRegistro();
-  // Limpar atestado
-  _atestadoBase64 = null; _atestadoMime = null; _atestadoExt = null; _atestadoDriveUrl = null;
-  document.getElementById('atestado-preview-label').textContent = 'Toque para selecionar foto ou PDF';
-}
 
 // Mostrar link do atestado ao editar registro
-const _origAbrirModal = abrirModal;
-function abrirModal(reg) {
-  _atestadoBase64 = null; _atestadoMime = null; _atestadoExt = null; _atestadoDriveUrl = null;
-  document.getElementById('atestado-preview-label').textContent = 'Toque para selecionar foto ou PDF';
-
-  // Verificar se já tem link de atestado salvo
-  const obsAbono = reg?.obsAbono || '';
-  const driveMatch = obsAbono.match(/https:\/\/drive\.google\.com\/[^\s|]*/);
-  const linkEl = document.getElementById('atestado-link');
-  if (driveMatch) {
-    document.getElementById('atestado-link-url').href = driveMatch[0];
-    linkEl.style.display = 'block';
-  } else {
-    linkEl.style.display = 'none';
-  }
-
-  _origAbrirModal(reg);
-}
 
 </script>
 </body>
