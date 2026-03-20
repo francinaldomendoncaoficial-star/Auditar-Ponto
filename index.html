@@ -27,14 +27,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .logo span{font-family:var(--mono);font-size:.65rem;font-weight:400;
   -webkit-text-fill-color:var(--muted);display:block;letter-spacing:.1em;}
-.gas-row{display:flex;gap:.5rem;align-items:center;}
-#gas-url{background:var(--card);border:1px solid var(--border);color:var(--text);
-  border-radius:8px;padding:.4rem .75rem;font-family:var(--mono);font-size:.72rem;
-  width:300px;outline:none;transition:border-color .2s;}
-#gas-url:focus{border-color:var(--accent);}
-.btn-icon{background:var(--card);border:1px solid var(--border);color:var(--accent);
-  border-radius:8px;padding:.4rem .65rem;cursor:pointer;font-size:.85rem;transition:all .2s;}
-.btn-icon:hover{background:var(--accent);color:#000;}
+
 
 .container{max-width:1260px;margin:0 auto;padding:2rem;position:relative;z-index:1;}
 
@@ -236,24 +229,30 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
 .upload-zone input{display:none;}
 
 @media(max-width:640px){
-  header{flex-direction:column;align-items:flex-start;}
-  #gas-url{width:100%;}
+  html{font-size:17px;}
+  header{padding:.9rem 1rem;}
   .container{padding:1rem;}
   .config-row,.abono-parcial-fields{grid-template-columns:1fr;}
+  .month-nav h2{font-size:1.25rem;min-width:160px;}
+  tbody td{font-size:.85rem;padding:.6rem .7rem;}
+  thead th{font-size:.72rem;padding:.6rem .7rem;}
+  .chip{font-size:.76rem;padding:.15rem .5rem;}
+  .batida-row input[type=time]{font-size:.95rem;}
+  .field input,.field select{font-size:.9rem;padding:.6rem .8rem;}
+  .btn{font-size:.95rem;padding:.65rem 1.2rem;}
+  .btn.sm{font-size:.82rem;padding:.4rem .75rem;}
+  .s-card .value{font-size:1.45rem;}
+  .s-card .label{font-size:.72rem;}
+  .relogio{font-size:2.5rem;}
+  .btn-bater{font-size:1.1rem;padding:1rem;}
+  #preview-box{font-size:.82rem;}
 }
 </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <div class="logo">Ponto Certo <span>▸ CONTROLE DE JORNADA v4</span></div>
-  </div>
-  <div class="gas-row">
-    <input id="gas-url" type="url" placeholder="URL do Web App (GAS)..."
-      value="https://script.google.com/macros/s/AKfycbys5XElLe1p0PbH5EyzMTgRkA6_xqeelxJgGRXE4YAT3qYPBMlkKbkiraUJJd4FgJzV/exec"/>
-    <button class="btn-icon" title="Salvar URL" onclick="saveGasUrl()">💾</button>
-  </div>
+  <div class="logo">Ponto Certo <span>▸ CONTROLE DE JORNADA v5</span></div>
 </header>
 
 <div class="container">
@@ -505,9 +504,7 @@ let _cfg = { jornadaSegQui:540, jornadaSexta:480, almocoDe:660, almocoAte:840 };
 let _batidas = [];
 
 window.addEventListener('DOMContentLoaded', () => {
-  const fv = document.getElementById('gas-url').value.trim();
-  if (!GAS_URL && fv) GAS_URL = fv;
-  if (GAS_URL) { document.getElementById('gas-url').value=GAS_URL; localStorage.setItem('ponto_gas_url',GAS_URL); }
+  if (GAS_URL) localStorage.setItem('ponto_gas_url', GAS_URL);
   atualizarTitulos();
   carregarConfig().then(() => { carregarRegistros(); carregarFeriados(); });
   document.getElementById('cfg-almoco-de').addEventListener('change', () => {
@@ -518,11 +515,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function saveGasUrl(){
-  GAS_URL=document.getElementById('gas-url').value.trim();
-  if(!GAS_URL){toast('Cole a URL!',true);return;}
-  localStorage.setItem('ponto_gas_url',GAS_URL); toast('URL salva!');
-}
+
 
 function mesStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function mesNome(d){return d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});}
