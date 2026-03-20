@@ -274,12 +274,7 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
         <div class="relogio data-label" id="relogio-data"></div>
       </div>
 
-      <!-- Seletor câmera -->
-      <div class="cam-face-select">
-        <button class="cam-face-btn active" id="btn-cam-traseira" onclick="selecionarCamera('environment')">📷 Traseira</button>
-        <button class="cam-face-btn" id="btn-cam-frontal" onclick="selecionarCamera('user')">🤳 Frontal</button>
-        <button class="cam-face-btn" id="btn-cam-webcam" onclick="selecionarCamera('webcam')">💻 Webcam</button>
-      </div>
+
 
       <!-- Câmera / Preview -->
       <div class="camera-box" id="camera-box">
@@ -303,21 +298,18 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
         <div style="margin-top:.5rem;"><div class="batidas-hoje" id="batidas-hoje-chips"></div></div>
       </div>
 
-      <!-- Botões de ação -->
-      <div class="cam-controls">
-        <button class="btn sec" style="flex:1" id="btn-iniciar-cam" onclick="iniciarCamera()">📷 Iniciar Câmera</button>
-        <button class="btn sec" style="flex:1" id="btn-parar-cam" onclick="pararCamera()" style="display:none">⏹ Parar</button>
+      <!-- Seletor câmera frontal/traseira -->
+      <div class="cam-face-select" id="cam-face-select" style="display:none">
+        <button class="cam-face-btn active" id="btn-cam-traseira" onclick="selecionarCamera('environment')">📷 Traseira</button>
+        <button class="cam-face-btn" id="btn-cam-frontal" onclick="selecionarCamera('user')">🤳 Frontal</button>
       </div>
 
-      <button class="btn-bater" id="btn-bater-ponto" onclick="acaoBaterPonto()">
+      <button class="btn-bater" id="btn-bater-ponto" onclick="baterPontoCompleto()">
         ⏱ BATER PONTO
-      </button>
-      <button class="btn-bater fotografar" id="btn-fotografar" style="display:none" onclick="tirarFoto()">
-        📸 FOTOGRAFAR TELA DO FACE PONTO
       </button>
       <div class="cam-controls" id="btns-pos-foto" style="display:none">
         <button class="btn-bater confirmar" style="flex:1;font-size:.95rem" onclick="confirmarBatida()">✓ CONFIRMAR E SALVAR</button>
-        <button class="btn sec" style="flex:1" onclick="descartarFoto()">✕ Refazer</button>
+        <button class="btn sec" style="flex:1" onclick="descartarFoto()">✕ Refazer foto</button>
       </div>
 
       <div id="ponto-feedback" style="width:100%;max-width:480px;display:none;
@@ -882,92 +874,86 @@ setInterval(() => {
 
 function selecionarCamera(modo) {
   document.querySelectorAll('.cam-face-btn').forEach(b => b.classList.remove('active'));
-  if (modo === 'environment') { document.getElementById('btn-cam-traseira').classList.add('active'); _facingMode = 'environment'; }
-  else if (modo === 'user')   { document.getElementById('btn-cam-frontal').classList.add('active'); _facingMode = 'user'; }
-  else                        { document.getElementById('btn-cam-webcam').classList.add('active'); _facingMode = 'user'; }
-  if (_stream) iniciarCamera();
+  _facingMode = modo === 'user' ? 'user' : 'environment';
+  document.getElementById(_facingMode === 'user' ? 'btn-cam-frontal' : 'btn-cam-traseira').classList.add('active');
+  if (_stream) _ligarCamera(); // trocar câmera se já estiver ativa
 }
 
-async function iniciarCamera() {
-  try {
-    if (_stream) pararCamera();
-    const constraints = { video: { facingMode: _facingMode, width:{ideal:1280}, height:{ideal:960} }, audio: false };
-    _stream = await navigator.mediaDevices.getUserMedia(constraints);
-    const video = document.getElementById('camera-video');
-    video.srcObject = _stream;
-    document.getElementById('cam-overlay').style.display = 'none';
-    document.getElementById('btn-iniciar-cam').textContent = '🔄 Trocar Câmera';
-    document.getElementById('btn-parar-cam').style.display = 'block';
-    document.getElementById('photo-preview').style.display = 'none';
-    document.getElementById('btns-pos-foto').style.display = 'none';
-    document.getElementById('btn-fotografar').style.display = 'none';
-    document.getElementById('btn-bater-ponto').style.display = 'block';
-    _fotoBase64 = null; _horarioBatida = null;
-  } catch(e) {
-    toast('Câmera não disponível: '+e.message, true);
-  }
-}
-
-function pararCamera() {
+async function _ligarCamera() {
   if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
-  document.getElementById('cam-overlay').style.display = 'flex';
-  document.getElementById('btn-parar-cam').style.display = 'none';
-  document.getElementById('btn-iniciar-cam').textContent = '📷 Iniciar Câmera';
+  const constraints = { video: { facingMode: _facingMode, width:{ideal:1280}, height:{ideal:960} }, audio: false };
+  _stream = await navigator.mediaDevices.getUserMedia(constraints);
+  const video = document.getElementById('camera-video');
+  video.srcObject = _stream;
+  document.getElementById('cam-overlay').style.display = 'none';
 }
 
-// Passo 1: apertar BATER PONTO — registra horário exato
-function acaoBaterPonto() {
+// Botão único: captura horário + liga câmera + tira foto automaticamente
+async function baterPontoCompleto() {
+  // 1. Capturar horário IMEDIATAMENTE
   const agora = new Date();
   _horarioBatida = String(agora.getHours()).padStart(2,'0') + ':' + String(agora.getMinutes()).padStart(2,'0');
   _pontoDataHoje = agora.getFullYear()+'-'+String(agora.getMonth()+1).padStart(2,'0')+'-'+String(agora.getDate()).padStart(2,'0');
 
-  toast('⏱ Horário capturado: ' + _horarioBatida);
+  document.getElementById('btn-bater-ponto').textContent = '📷 Abrindo câmera...';
+  document.getElementById('btn-bater-ponto').disabled = true;
 
-  if (_stream) {
-    // Câmera ativa → pedir foto
-    document.getElementById('btn-bater-ponto').style.display = 'none';
-    document.getElementById('btn-fotografar').style.display = 'block';
-    document.getElementById('btn-fotografar').textContent = '📸 FOTOGRAFAR — ' + _horarioBatida;
-  } else {
-    // Sem câmera → confirmar direto
+  try {
+    // 2. Ligar câmera
+    await _ligarCamera();
+    document.getElementById('cam-face-select').style.display = 'flex';
+
+    // 3. Pequena pausa para câmera estabilizar (500ms)
+    await new Promise(r => setTimeout(r, 500));
+
+    // 4. Tirar foto automaticamente
+    _tirarFotoAutomatico();
+
+  } catch(e) {
+    // Câmera não disponível — registrar sem foto
+    toast('📷 Câmera indisponível — registrando sem foto', false);
+    _fotoBase64 = null;
     document.getElementById('btn-bater-ponto').style.display = 'none';
     document.getElementById('btns-pos-foto').style.display = 'flex';
-    _fotoBase64 = null;
+  } finally {
+    document.getElementById('btn-bater-ponto').textContent = '⏱ BATER PONTO';
+    document.getElementById('btn-bater-ponto').disabled = false;
   }
 }
 
-// Passo 2: tirar foto
-function tirarFoto() {
-  const video = document.getElementById('camera-video');
+function _tirarFotoAutomatico() {
+  const video  = document.getElementById('camera-video');
   const canvas = document.getElementById('camera-canvas');
   canvas.width  = video.videoWidth  || 1280;
   canvas.height = video.videoHeight || 960;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0);
 
-  // Adicionar timestamp na foto
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.fillRect(0, canvas.height - 52, canvas.width, 52);
+  // Gravar timestamp na foto
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, canvas.height - 56, canvas.width, 56);
   ctx.fillStyle = '#00e5a0';
-  ctx.font = 'bold 28px monospace';
-  ctx.fillText(_horarioBatida + ' — ' + _pontoDataHoje, 14, canvas.height - 16);
+  ctx.font = 'bold 30px monospace';
+  ctx.fillText(_horarioBatida + ' — ' + _pontoDataHoje, 16, canvas.height - 16);
 
   _fotoBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 
-  // Mostrar preview
+  // Mostrar preview da foto
   document.getElementById('foto-preview-img').src = 'data:image/jpeg;base64,' + _fotoBase64;
   document.getElementById('photo-preview').style.display = 'block';
-  document.getElementById('btn-fotografar').style.display = 'none';
+  document.getElementById('camera-box').style.opacity = '0.5';
+  document.getElementById('btn-bater-ponto').style.display = 'none';
   document.getElementById('btns-pos-foto').style.display = 'flex';
-  document.getElementById('camera-box').style.opacity = '0.4';
 }
 
 function descartarFoto() {
+  // Refazer: tira outra foto sem mudar o horário já registrado
   _fotoBase64 = null;
   document.getElementById('photo-preview').style.display = 'none';
   document.getElementById('camera-box').style.opacity = '1';
   document.getElementById('btns-pos-foto').style.display = 'none';
-  document.getElementById('btn-bater-ponto').style.display = 'block';
+  // Tira nova foto automaticamente
+  setTimeout(_tirarFotoAutomatico, 300);
 }
 
 // Passo 3: confirmar e salvar
