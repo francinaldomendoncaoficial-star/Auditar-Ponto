@@ -211,7 +211,7 @@ tbody td{padding:.7rem 1rem;font-family:var(--mono);font-size:.82rem;}
     <div class="logo">Ponto Certo <span>▸ CONTROLE DE JORNADA v2</span></div>
   </div>
   <div class="gas-row">
-    <input id="gas-url" type="url" placeholder="https://script.google.com/macros/s/AKfycbys5XElLe1p0PbH5EyzMTgRkA6_xqeelxJgGRXE4YAT3qYPBMlkKbkiraUJJd4FgJzV/exec"/>
+    <input id="gas-url" type="url" placeholder="Cole aqui a URL do Web App (GAS)..." value="https://script.google.com/macros/s/AKfycbys5XElLe1p0PbH5EyzMTgRkA6_xqeelxJgGRXE4YAT3qYPBMlkKbkiraUJJd4FgJzV/exec"/>
     <button class="btn-icon" title="Salvar URL" onclick="saveGasUrl()">💾</button>
   </div>
 </header>
@@ -325,14 +325,20 @@ tbody td{padding:.7rem 1rem;font-family:var(--mono);font-size:.82rem;}
 
 <script>
 // ── Estado ──
-let GAS_URL = localStorage.getItem('ponto_gas_url') || '';
+const GAS_URL_FIXO = document.getElementById('gas-url')?.value || '';
+let GAS_URL = localStorage.getItem('ponto_gas_url') || GAS_URL_FIXO;
 let mesAtual = new Date(); mesAtual.setDate(1);
 let _registrosCache = [];
 
 // ── Init ──
 window.addEventListener('DOMContentLoaded', () => {
+  // URL fixa embutida no campo
+  const fieldUrl = document.getElementById('gas-url').value.trim();
+  if (!GAS_URL && fieldUrl) GAS_URL = fieldUrl;
+  if (!GAS_URL) GAS_URL = fieldUrl;
   if (GAS_URL) {
     document.getElementById('gas-url').value = GAS_URL;
+    localStorage.setItem('ponto_gas_url', GAS_URL);
     document.getElementById('setup-banner').style.display = 'none';
   }
   atualizarTitulos();
