@@ -539,6 +539,7 @@ function switchTab(tab,btn){
   if(tab==='resumo') carregarResumo();
   if(tab==='feriados') carregarFeriados();
   if(tab==='config') carregarConfig();
+  if(tab==='ponto') carregarStatusHoje();
 }
 
 function toast(msg,err=false){
@@ -1051,12 +1052,7 @@ async function carregarStatusHoje() {
   ).join('') || '<span style="color:var(--muted);font-size:.75rem">Nenhuma batida hoje</span>';
 }
 
-// Chamar ao abrir a aba ponto
-const _origSwitchTab = switchTab;
-function switchTab(tab, btn) {
-  _origSwitchTab(tab, btn);
-  if (tab === 'ponto') carregarStatusHoje();
-}
+// Carregar status ao abrir aba ponto é feito dentro do switchTab original
 
 // ══════════════════════════════════════════
 // ATESTADO — upload de arquivo
