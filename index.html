@@ -192,6 +192,49 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
 .progress-bar.over{background:linear-gradient(90deg,var(--accent2),var(--danger));}
 .section-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.5rem;display:block;}
 
+/* ── Bater Ponto ── */
+.ponto-wrap{display:flex;flex-direction:column;align-items:center;gap:1.5rem;padding:1rem 0;}
+.camera-box{position:relative;width:100%;max-width:480px;aspect-ratio:4/3;
+  background:#000;border-radius:16px;overflow:hidden;border:2px solid var(--border);}
+#camera-video{width:100%;height:100%;object-fit:cover;display:block;}
+#camera-canvas{display:none;}
+.camera-box .cam-overlay{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;background:rgba(0,0,0,.6);flex-direction:column;gap:.75rem;}
+.cam-overlay .cam-msg{color:var(--muted);font-size:.85rem;font-family:var(--mono);text-align:center;padding:0 1rem;}
+.photo-preview{width:100%;max-width:480px;border-radius:16px;overflow:hidden;
+  border:2px solid var(--accent);display:none;}
+#foto-preview-img{width:100%;display:block;}
+.relogio{font-family:var(--mono);font-size:3rem;font-weight:700;letter-spacing:.05em;
+  color:var(--text);text-align:center;line-height:1;}
+.relogio .data-label{font-size:.85rem;color:var(--muted);font-weight:400;margin-top:.25rem;}
+.btn-bater{width:100%;max-width:480px;padding:1.1rem;font-size:1.2rem;font-weight:800;
+  letter-spacing:.05em;border-radius:16px;background:var(--accent);color:#000;
+  border:none;cursor:pointer;transition:all .2s;font-family:var(--sans);}
+.btn-bater:hover{filter:brightness(1.1);transform:translateY(-2px);}
+.btn-bater:active{transform:scale(.97);}
+.btn-bater.fotografar{background:var(--accent2);}
+.btn-bater.confirmar{background:var(--accent);}
+.btn-bater.disabled{background:var(--muted);cursor:not-allowed;transform:none;filter:none;}
+.ponto-status{width:100%;max-width:480px;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:1rem 1.25rem;font-family:var(--mono);font-size:.82rem;}
+.ponto-status .st-row{display:flex;justify-content:space-between;padding:.2rem 0;
+  border-bottom:1px solid var(--border);}
+.ponto-status .st-row:last-child{border-bottom:none;}
+.ponto-status .st-label{color:var(--muted);}
+.ponto-status .st-val{color:var(--text);font-weight:700;}
+.batidas-hoje{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem;}
+.cam-controls{display:flex;gap:.75rem;width:100%;max-width:480px;}
+.cam-face-select{display:flex;gap:.5rem;justify-content:center;}
+.cam-face-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);
+  border-radius:8px;padding:.35rem .9rem;font-size:.78rem;font-family:var(--mono);
+  cursor:pointer;transition:all .2s;}
+.cam-face-btn.active{border-color:var(--accent);color:var(--accent);}
+.upload-zone{width:100%;max-width:480px;border:2px dashed var(--border);border-radius:12px;
+  padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);
+  font-size:.85rem;}
+.upload-zone:hover{border-color:var(--accent);color:var(--accent);}
+.upload-zone input{display:none;}
+
 @media(max-width:640px){
   header{flex-direction:column;align-items:flex-start;}
   #gas-url{width:100%;}
@@ -215,10 +258,75 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
 
 <div class="container">
   <div class="tabs">
+    <button class="tab" onclick="switchTab('ponto',this)">📸 Bater Ponto</button>
     <button class="tab active" onclick="switchTab('registros',this)">📋 Registros</button>
     <button class="tab" onclick="switchTab('resumo',this)">📊 Resumo</button>
     <button class="tab" onclick="switchTab('feriados',this)">🗓️ Feriados</button>
     <button class="tab" onclick="switchTab('config',this)">⚙️ Configurações</button>
+  </div>
+
+  <!-- BATER PONTO -->
+  <div id="tab-ponto" class="tab-content">
+    <div class="ponto-wrap">
+
+      <!-- Relógio -->
+      <div style="text-align:center;">
+        <div class="relogio" id="relogio-hora">--:--:--</div>
+        <div class="relogio data-label" id="relogio-data"></div>
+      </div>
+
+      <!-- Seletor câmera -->
+      <div class="cam-face-select">
+        <button class="cam-face-btn active" id="btn-cam-traseira" onclick="selecionarCamera('environment')">📷 Traseira</button>
+        <button class="cam-face-btn" id="btn-cam-frontal" onclick="selecionarCamera('user')">🤳 Frontal</button>
+        <button class="cam-face-btn" id="btn-cam-webcam" onclick="selecionarCamera('webcam')">💻 Webcam</button>
+      </div>
+
+      <!-- Câmera / Preview -->
+      <div class="camera-box" id="camera-box">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <div class="cam-overlay" id="cam-overlay">
+          <span style="font-size:2rem;">📷</span>
+          <span class="cam-msg">Clique em "Iniciar Câmera" para ativar</span>
+        </div>
+      </div>
+
+      <!-- Preview da foto tirada -->
+      <div class="photo-preview" id="photo-preview">
+        <img id="foto-preview-img" src="" alt="Foto tirada"/>
+      </div>
+
+      <!-- Estado atual do ponto hoje -->
+      <div class="ponto-status" id="ponto-status-hoje">
+        <div class="st-row"><span class="st-label">Hoje</span><span class="st-val" id="st-hoje-data">—</span></div>
+        <div class="st-row"><span class="st-label">Batidas registradas</span><span class="st-val" id="st-hoje-qtd">0</span></div>
+        <div class="st-row"><span class="st-label">Próxima batida</span><span class="st-val" id="st-proxima">ENTRADA</span></div>
+        <div style="margin-top:.5rem;"><div class="batidas-hoje" id="batidas-hoje-chips"></div></div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="cam-controls">
+        <button class="btn sec" style="flex:1" id="btn-iniciar-cam" onclick="iniciarCamera()">📷 Iniciar Câmera</button>
+        <button class="btn sec" style="flex:1" id="btn-parar-cam" onclick="pararCamera()" style="display:none">⏹ Parar</button>
+      </div>
+
+      <button class="btn-bater" id="btn-bater-ponto" onclick="acaoBaterPonto()">
+        ⏱ BATER PONTO
+      </button>
+      <button class="btn-bater fotografar" id="btn-fotografar" style="display:none" onclick="tirarFoto()">
+        📸 FOTOGRAFAR TELA DO FACE PONTO
+      </button>
+      <div class="cam-controls" id="btns-pos-foto" style="display:none">
+        <button class="btn-bater confirmar" style="flex:1;font-size:.95rem" onclick="confirmarBatida()">✓ CONFIRMAR E SALVAR</button>
+        <button class="btn sec" style="flex:1" onclick="descartarFoto()">✕ Refazer</button>
+      </div>
+
+      <div id="ponto-feedback" style="width:100%;max-width:480px;display:none;
+        background:var(--card);border:1px solid var(--accent);border-radius:12px;
+        padding:1rem 1.25rem;font-family:var(--mono);font-size:.85rem;text-align:center;">
+      </div>
+
+    </div>
   </div>
 
   <!-- REGISTROS -->
@@ -346,6 +454,18 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
         <label>Observação do abono</label>
         <input type="text" id="f-abono-obs" placeholder="Ex: Consulta cardiologista às 10h"/>
       </div>
+      <div class="field" style="margin-top:.75rem;" id="atestado-upload-field">
+        <label>📎 Atestado / Documento (opcional)</label>
+        <div class="upload-zone" onclick="document.getElementById('f-atestado-file').click()">
+          <input type="file" id="f-atestado-file" accept="image/*,.pdf" capture="environment" onchange="previewAtestado(this)"/>
+          <div id="atestado-preview-label">Toque para selecionar foto ou PDF</div>
+        </div>
+        <div id="atestado-link" style="display:none;margin-top:.5rem;font-size:.75rem;">
+          <a id="atestado-link-url" href="#" target="_blank" style="color:var(--abono);">
+            🟣 Ver atestado salvo no Drive
+          </a>
+        </div>
+      </div>
     </div>
 
     <input type="hidden" id="f-id"/>
@@ -374,6 +494,7 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
   </div>
 </div>
 
+<canvas id="camera-canvas" style="display:none"></canvas>
 <div id="toast"></div>
 
 <script>
@@ -737,6 +858,282 @@ async function deletarFeriado(data){
   const r=await api({action:'deletarFeriado',data});
   if(r?.ok){toast('Feriado removido!');carregarFeriados();}else if(r)toast(r.msg,true);
 }
+
+// ══════════════════════════════════════════
+// ABA BATER PONTO — Câmera e batida avulsa
+// ══════════════════════════════════════════
+
+let _stream = null;
+let _horarioBatida = null;
+let _fotoBase64 = null;
+let _facingMode = 'environment';
+let _pontoBatidasHoje = [];
+let _pontoDataHoje = '';
+
+// Relógio em tempo real
+setInterval(() => {
+  const agora = new Date();
+  const h = String(agora.getHours()).padStart(2,'0');
+  const m = String(agora.getMinutes()).padStart(2,'0');
+  const s = String(agora.getSeconds()).padStart(2,'0');
+  const el = document.getElementById('relogio-hora');
+  if (el) el.textContent = h+':'+m+':'+s;
+  const elD = document.getElementById('relogio-data');
+  if (elD) elD.textContent = agora.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const elHoje = document.getElementById('st-hoje-data');
+  if (elHoje && !_pontoDataHoje) {
+    elHoje.textContent = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+}, 1000);
+
+function selecionarCamera(modo) {
+  document.querySelectorAll('.cam-face-btn').forEach(b => b.classList.remove('active'));
+  if (modo === 'environment') { document.getElementById('btn-cam-traseira').classList.add('active'); _facingMode = 'environment'; }
+  else if (modo === 'user')   { document.getElementById('btn-cam-frontal').classList.add('active'); _facingMode = 'user'; }
+  else                        { document.getElementById('btn-cam-webcam').classList.add('active'); _facingMode = 'user'; }
+  if (_stream) iniciarCamera();
+}
+
+async function iniciarCamera() {
+  try {
+    if (_stream) pararCamera();
+    const constraints = { video: { facingMode: _facingMode, width:{ideal:1280}, height:{ideal:960} }, audio: false };
+    _stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('camera-video');
+    video.srcObject = _stream;
+    document.getElementById('cam-overlay').style.display = 'none';
+    document.getElementById('btn-iniciar-cam').textContent = '🔄 Trocar Câmera';
+    document.getElementById('btn-parar-cam').style.display = 'block';
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('btns-pos-foto').style.display = 'none';
+    document.getElementById('btn-fotografar').style.display = 'none';
+    document.getElementById('btn-bater-ponto').style.display = 'block';
+    _fotoBase64 = null; _horarioBatida = null;
+  } catch(e) {
+    toast('Câmera não disponível: '+e.message, true);
+  }
+}
+
+function pararCamera() {
+  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
+  document.getElementById('cam-overlay').style.display = 'flex';
+  document.getElementById('btn-parar-cam').style.display = 'none';
+  document.getElementById('btn-iniciar-cam').textContent = '📷 Iniciar Câmera';
+}
+
+// Passo 1: apertar BATER PONTO — registra horário exato
+function acaoBaterPonto() {
+  const agora = new Date();
+  _horarioBatida = String(agora.getHours()).padStart(2,'0') + ':' + String(agora.getMinutes()).padStart(2,'0');
+  _pontoDataHoje = agora.getFullYear()+'-'+String(agora.getMonth()+1).padStart(2,'0')+'-'+String(agora.getDate()).padStart(2,'0');
+
+  toast('⏱ Horário capturado: ' + _horarioBatida);
+
+  if (_stream) {
+    // Câmera ativa → pedir foto
+    document.getElementById('btn-bater-ponto').style.display = 'none';
+    document.getElementById('btn-fotografar').style.display = 'block';
+    document.getElementById('btn-fotografar').textContent = '📸 FOTOGRAFAR — ' + _horarioBatida;
+  } else {
+    // Sem câmera → confirmar direto
+    document.getElementById('btn-bater-ponto').style.display = 'none';
+    document.getElementById('btns-pos-foto').style.display = 'flex';
+    _fotoBase64 = null;
+  }
+}
+
+// Passo 2: tirar foto
+function tirarFoto() {
+  const video = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  canvas.width  = video.videoWidth  || 1280;
+  canvas.height = video.videoHeight || 960;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  // Adicionar timestamp na foto
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, canvas.height - 52, canvas.width, 52);
+  ctx.fillStyle = '#00e5a0';
+  ctx.font = 'bold 28px monospace';
+  ctx.fillText(_horarioBatida + ' — ' + _pontoDataHoje, 14, canvas.height - 16);
+
+  _fotoBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+
+  // Mostrar preview
+  document.getElementById('foto-preview-img').src = 'data:image/jpeg;base64,' + _fotoBase64;
+  document.getElementById('photo-preview').style.display = 'block';
+  document.getElementById('btn-fotografar').style.display = 'none';
+  document.getElementById('btns-pos-foto').style.display = 'flex';
+  document.getElementById('camera-box').style.opacity = '0.4';
+}
+
+function descartarFoto() {
+  _fotoBase64 = null;
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('camera-box').style.opacity = '1';
+  document.getElementById('btns-pos-foto').style.display = 'none';
+  document.getElementById('btn-bater-ponto').style.display = 'block';
+}
+
+// Passo 3: confirmar e salvar
+async function confirmarBatida() {
+  if (!_horarioBatida || !_pontoDataHoje) { toast('Erro: horário não capturado!', true); return; }
+
+  const btnConf = document.querySelector('#btns-pos-foto .btn-bater');
+  btnConf.textContent = '⏳ Salvando...'; btnConf.disabled = true;
+
+  try {
+    // 1. Salvar foto no Drive (se tiver)
+    let fotoUrl = null, fotoFileId = null;
+    if (_fotoBase64) {
+      const rf = await api({ action:'salvarFotoBatida', data:_pontoDataHoje,
+        horario:_horarioBatida, base64:_fotoBase64, mimeType:'image/jpeg' });
+      if (rf?.ok) { fotoUrl = rf.viewUrl; fotoFileId = rf.fileId; }
+      else toast('Foto não salva: '+(rf?.msg||'erro'), true);
+    }
+
+    // 2. Registrar batida
+    const rb = await api({ action:'registrarBatidaAvulsa',
+      data:_pontoDataHoje, horario:_horarioBatida, fotoUrl, fotoFileId });
+
+    if (rb?.ok) {
+      // Feedback
+      const fb = document.getElementById('ponto-feedback');
+      fb.style.display = 'block';
+      fb.innerHTML = `
+        <div style="font-size:1.5rem;margin-bottom:.5rem;">${rb.tipo==='ENTRADA'?'✅':'🔴'}</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--accent)">${_horarioBatida}</div>
+        <div style="color:var(--muted);margin-top:.25rem;">${rb.tipo} registrada</div>
+        ${fotoUrl?`<div style="margin-top:.5rem"><a href="${fotoUrl}" target="_blank" style="color:var(--abono);font-size:.78rem;">📎 Ver foto no Drive</a></div>`:''}
+      `;
+      toast('✅ Batida registrada: '+_horarioBatida);
+
+      // Atualizar status do dia
+      await carregarStatusHoje();
+
+      // Reset UI
+      document.getElementById('photo-preview').style.display = 'none';
+      document.getElementById('camera-box').style.opacity = '1';
+      document.getElementById('btns-pos-foto').style.display = 'none';
+      document.getElementById('btn-bater-ponto').style.display = 'block';
+      _fotoBase64 = null; _horarioBatida = null;
+
+      // Recarregar registros se estiver na aba
+      carregarRegistros();
+    } else {
+      toast(rb?.msg || 'Erro ao registrar batida', true);
+    }
+  } catch(e) {
+    toast('Erro: '+e.message, true);
+  } finally {
+    btnConf.textContent = '✓ CONFIRMAR E SALVAR'; btnConf.disabled = false;
+  }
+}
+
+async function carregarStatusHoje() {
+  const agora = new Date();
+  const dataHoje = agora.getFullYear()+'-'+String(agora.getMonth()+1).padStart(2,'0')+'-'+String(agora.getDate()).padStart(2,'0');
+  const r = await api({action:'listarRegistros', mes: dataHoje.substring(0,7)});
+  if (!r?.ok) return;
+  const reg = r.data.find(x => x.data === dataHoje);
+  const batidas = reg?.batidas || [];
+  _pontoBatidasHoje = batidas;
+
+  document.getElementById('st-hoje-data').textContent =
+    agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('st-hoje-qtd').textContent = batidas.length;
+  document.getElementById('st-proxima').textContent = batidas.length % 2 === 0 ? 'ENTRADA' : 'SAÍDA';
+
+  const chips = document.getElementById('batidas-hoje-chips');
+  chips.innerHTML = batidas.map((b,i) =>
+    `<span class="chip ${i%2===0?'entrada':'saida'}">${b}</span>`
+  ).join('') || '<span style="color:var(--muted);font-size:.75rem">Nenhuma batida hoje</span>';
+}
+
+// Chamar ao abrir a aba ponto
+const _origSwitchTab = switchTab;
+function switchTab(tab, btn) {
+  _origSwitchTab(tab, btn);
+  if (tab === 'ponto') carregarStatusHoje();
+}
+
+// ══════════════════════════════════════════
+// ATESTADO — upload de arquivo
+// ══════════════════════════════════════════
+let _atestadoBase64 = null;
+let _atestadoMime = null;
+let _atestadoExt = null;
+let _atestadoDriveUrl = null;
+
+function previewAtestado(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const label = document.getElementById('atestado-preview-label');
+  label.textContent = '📎 ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
+  _atestadoMime = file.type;
+  _atestadoExt  = file.name.split('.').pop().toLowerCase();
+
+  const reader = new FileReader();
+  reader.onload = e => { _atestadoBase64 = e.target.result.split(',')[1]; };
+  reader.readAsDataURL(file);
+}
+
+// Salvar atestado no Drive durante o salvar registro
+async function salvarAtestadoSeExistir(data, tipoAbono) {
+  if (!_atestadoBase64) return null;
+  const r = await api({ action:'salvarAtestado', data, tipoAbono,
+    base64:_atestadoBase64, mimeType:_atestadoMime, extensao:_atestadoExt });
+  if (r?.ok) {
+    _atestadoDriveUrl = r.viewUrl;
+    return r.viewUrl;
+  }
+  toast('Atestado não salvo: '+(r?.msg||'erro'), true);
+  return null;
+}
+
+// Hook no salvarRegistro para incluir atestado
+const _origSalvarRegistro = salvarRegistro;
+async function salvarRegistro() {
+  // Salvar atestado antes se houver
+  const data = document.getElementById('f-data').value;
+  const tipo = document.getElementById('f-abono-tipo').value;
+  if (_atestadoBase64 && data && tipo !== 'nenhum') {
+    await salvarAtestadoSeExistir(data, tipo);
+  }
+  // Incluir URL do atestado na obsAbono se salvou
+  if (_atestadoDriveUrl) {
+    const obsEl = document.getElementById('f-abono-obs');
+    if (!obsEl.value.includes('drive.google')) {
+      obsEl.value = (obsEl.value ? obsEl.value + ' | ' : '') + _atestadoDriveUrl;
+    }
+  }
+  await _origSalvarRegistro();
+  // Limpar atestado
+  _atestadoBase64 = null; _atestadoMime = null; _atestadoExt = null; _atestadoDriveUrl = null;
+  document.getElementById('atestado-preview-label').textContent = 'Toque para selecionar foto ou PDF';
+}
+
+// Mostrar link do atestado ao editar registro
+const _origAbrirModal = abrirModal;
+function abrirModal(reg) {
+  _atestadoBase64 = null; _atestadoMime = null; _atestadoExt = null; _atestadoDriveUrl = null;
+  document.getElementById('atestado-preview-label').textContent = 'Toque para selecionar foto ou PDF';
+
+  // Verificar se já tem link de atestado salvo
+  const obsAbono = reg?.obsAbono || '';
+  const driveMatch = obsAbono.match(/https:\/\/drive\.google\.com\/[^\s|]*/);
+  const linkEl = document.getElementById('atestado-link');
+  if (driveMatch) {
+    document.getElementById('atestado-link-url').href = driveMatch[0];
+    linkEl.style.display = 'block';
+  } else {
+    linkEl.style.display = 'none';
+  }
+
+  _origAbrirModal(reg);
+}
+
 </script>
 </body>
 </html>
