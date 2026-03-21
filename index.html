@@ -370,22 +370,18 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
   <!-- CONFIG -->
   <div id="tab-config" class="tab-content">
     <div class="config-panel">
-      <h3>⚙️ Jornada Padrão</h3>
-      <div class="config-row">
-        <div class="field"><label>Jornada Seg–Qui</label>
-          <select id="cfg-segqui">
-            <option value="480">8h00</option><option value="510">8h30</option>
-            <option value="540" selected>9h00</option><option value="570">9h30</option>
-            <option value="600">10h00</option>
-          </select>
-        </div>
-        <div class="field"><label>Jornada Sexta</label>
-          <select id="cfg-sexta">
-            <option value="420">7h00</option><option value="450">7h30</option>
-            <option value="480" selected>8h00</option><option value="510">8h30</option>
-            <option value="540">9h00</option>
-          </select>
-        </div>
+      <h3>⚙️ Jornada por Dia da Semana</h3>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;">
+        Configure a jornada esperada para cada dia. Coloque 0h para dias de folga.
+      </p>
+      <div class="config-row" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+        <div class="field"><label>Segunda</label><select id="cfg-seg" data-dia="jornadaSeg"></select></div>
+        <div class="field"><label>Terça</label><select id="cfg-ter" data-dia="jornadaTer"></select></div>
+        <div class="field"><label>Quarta</label><select id="cfg-qua" data-dia="jornadaQua"></select></div>
+        <div class="field"><label>Quinta</label><select id="cfg-qui" data-dia="jornadaQui"></select></div>
+        <div class="field"><label>Sexta</label><select id="cfg-sex" data-dia="jornadaSex"></select></div>
+        <div class="field"><label>Sábado</label><select id="cfg-sab" data-dia="jornadaSab"></select></div>
+        <div class="field"><label>Domingo</label><select id="cfg-dom" data-dia="jornadaDom"></select></div>
       </div>
       <hr class="divider"/>
       <h3>🍽️ Janela do Almoço</h3>
@@ -394,7 +390,7 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
         <div class="field"><label>Termina às</label><input type="time" id="cfg-almoco-ate" value="14:00"/></div>
       </div>
       <div class="config-info">
-        Intervalos que começam entre <b id="info-de">11:00</b> e <b id="info-ate">14:00</b> são considerados almoço e não afetam o saldo.
+        Intervalos que começam entre <b id="info-de">11:00</b> e <b id="info-ate">14:00</b> são identificados como almoço apenas para exibição. O total trabalhado é sempre a soma dos períodos entre cada entrada e saída — sem nenhum desconto automático.
       </div>
       <div style="display:flex;gap:.75rem;margin-top:1.4rem;flex-wrap:wrap;">
         <button class="btn" onclick="salvarConfig()">✓ Salvar Configurações</button>
@@ -499,7 +495,7 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
 let GAS_URL = localStorage.getItem('ponto_gas_url') || '';
 let mesAtual = new Date(); mesAtual.setDate(1);
 let _registrosCache = [];
-let _cfg = { jornadaSegQui:540, jornadaSexta:480, almocoDe:660, almocoAte:840 };
+let _cfg = { jornadaDom:0, jornadaSeg:540, jornadaTer:540, jornadaQua:540, jornadaQui:540, jornadaSex:480, jornadaSab:0, almocoDe:660, almocoAte:840 };
 let _batidas = [];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -560,12 +556,27 @@ function minParaHora(min){
 function horaParaMin(h){if(!h)return null;const[a,b]=h.split(':');return +a*60+ +b;}
 
 // ── Config ──
+function _opcoesJornada(selecionado) {
+  const opcoes = [
+    [0,'Folga / 0h'],[420,'7h00'],[450,'7h30'],[480,'8h00'],
+    [510,'8h30'],[540,'9h00'],[570,'9h30'],[600,'10h00']
+  ];
+  return opcoes.map(([v,l]) =>
+    `<option value="${v}"${v===selecionado?' selected':''}>${l}</option>`
+  ).join('');
+}
+
 async function carregarConfig(){
   const r=await api({action:'getConfig'});
   if(r?.ok){
     _cfg=r.data;
-    document.getElementById('cfg-segqui').value=String(_cfg.jornadaSegQui||540);
-    document.getElementById('cfg-sexta').value=String(_cfg.jornadaSexta||480);
+    document.getElementById('cfg-seg').innerHTML=_opcoesJornada(_cfg.jornadaSeg||540);
+    document.getElementById('cfg-ter').innerHTML=_opcoesJornada(_cfg.jornadaTer||540);
+    document.getElementById('cfg-qua').innerHTML=_opcoesJornada(_cfg.jornadaQua||540);
+    document.getElementById('cfg-qui').innerHTML=_opcoesJornada(_cfg.jornadaQui||540);
+    document.getElementById('cfg-sex').innerHTML=_opcoesJornada(_cfg.jornadaSex||480);
+    document.getElementById('cfg-sab').innerHTML=_opcoesJornada(_cfg.jornadaSab||0);
+    document.getElementById('cfg-dom').innerHTML=_opcoesJornada(_cfg.jornadaDom||0);
     document.getElementById('cfg-almoco-de').value=minParaHora(_cfg.almocoDe||660);
     document.getElementById('cfg-almoco-ate').value=minParaHora(_cfg.almocoAte||840);
     document.getElementById('info-de').textContent=minParaHora(_cfg.almocoDe||660);
@@ -575,10 +586,16 @@ async function carregarConfig(){
 
 async function salvarConfig(){
   const r=await api({action:'salvarConfig',
-    jornadaSegQui:Number(document.getElementById('cfg-segqui').value),
-    jornadaSexta:Number(document.getElementById('cfg-sexta').value),
-    almocoDe:horaParaMin(document.getElementById('cfg-almoco-de').value),
-    almocoAte:horaParaMin(document.getElementById('cfg-almoco-ate').value)});
+    jornadaSeg: Number(document.getElementById('cfg-seg').value),
+    jornadaTer: Number(document.getElementById('cfg-ter').value),
+    jornadaQua: Number(document.getElementById('cfg-qua').value),
+    jornadaQui: Number(document.getElementById('cfg-qui').value),
+    jornadaSex: Number(document.getElementById('cfg-sex').value),
+    jornadaSab: Number(document.getElementById('cfg-sab').value),
+    jornadaDom: Number(document.getElementById('cfg-dom').value),
+    almocoDe:   horaParaMin(document.getElementById('cfg-almoco-de').value),
+    almocoAte:  horaParaMin(document.getElementById('cfg-almoco-ate').value)
+  });
   if(r?.ok){toast(r.msg);await carregarConfig();}else if(r)toast(r.msg,true);
 }
 
@@ -653,8 +670,12 @@ function calcPreview(){
     }
   }
 
-  let padrao=_cfg.jornadaSegQui||540;
-  if(data){const dow=new Date(data+'T12:00').getDay();if(dow===5)padrao=_cfg.jornadaSexta||480;}
+  let padrao=0;
+  if(data){
+    const dow=new Date(data+'T12:00').getDay();
+    const mapa=[_cfg.jornadaDom??0,_cfg.jornadaSeg??540,_cfg.jornadaTer??540,_cfg.jornadaQua??540,_cfg.jornadaQui??540,_cfg.jornadaSex??480,_cfg.jornadaSab??0];
+    padrao=mapa[dow]||0;
+  }
 
   // Calcular abono
   let abono=0;
