@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Ponto Certo</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <style>
@@ -12,6 +12,7 @@
   --info:#00b4d8;--abono:#a78bfa;
   --text:#e8ecf4;--muted:#6b7590;--radius:12px;
   --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;
+  font-size:16px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
@@ -228,24 +229,32 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
 .upload-zone:hover{border-color:var(--accent);color:var(--accent);}
 .upload-zone input{display:none;}
 
-@media(max-width:640px){
-  html{font-size:17px;}
+@media(max-width:768px){
+  html{font-size:18px;}
   header{padding:.9rem 1rem;}
   .container{padding:1rem;}
   .config-row,.abono-parcial-fields{grid-template-columns:1fr;}
-  .month-nav h2{font-size:1.25rem;min-width:160px;}
-  tbody td{font-size:.85rem;padding:.6rem .7rem;}
-  thead th{font-size:.72rem;padding:.6rem .7rem;}
-  .chip{font-size:.76rem;padding:.15rem .5rem;}
-  .batida-row input[type=time]{font-size:.95rem;}
-  .field input,.field select{font-size:.9rem;padding:.6rem .8rem;}
+  .month-nav h2{font-size:1.3rem;min-width:170px;}
+  .tabs{gap:.1rem;}
+  .tab{font-size:.82rem;padding:.5rem .75rem;}
+  tbody td{font-size:.9rem;padding:.65rem .75rem;}
+  thead th{font-size:.75rem;padding:.65rem .75rem;}
+  .chip{font-size:.8rem;padding:.18rem .55rem;}
+  .batida-seq{font-size:.78rem;}
+  .batida-row input[type=time]{font-size:1rem;padding:.5rem .7rem;}
+  .field input,.field select{font-size:.95rem;padding:.6rem .8rem;}
+  .field label{font-size:.78rem;}
   .btn{font-size:.95rem;padding:.65rem 1.2rem;}
-  .btn.sm{font-size:.82rem;padding:.4rem .75rem;}
-  .s-card .value{font-size:1.45rem;}
-  .s-card .label{font-size:.72rem;}
-  .relogio{font-size:2.5rem;}
-  .btn-bater{font-size:1.1rem;padding:1rem;}
-  #preview-box{font-size:.82rem;}
+  .btn.sm{font-size:.85rem;padding:.42rem .8rem;}
+  .s-card .value{font-size:1.5rem;}
+  .s-card .label{font-size:.75rem;}
+  .s-card .sub{font-size:.75rem;}
+  .relogio{font-size:2.8rem;}
+  .btn-bater{font-size:1.15rem;padding:1.1rem;}
+  #preview-box{font-size:.88rem;}
+  .modal{padding:1.25rem;}
+  .abono-section{padding:.85rem;}
+  .section-label{font-size:.78rem;}
 }
 </style>
 </head>
@@ -390,8 +399,6 @@ tbody td{padding:.6rem .9rem;font-family:var(--mono);font-size:.78rem;}
       <div style="display:flex;gap:.75rem;margin-top:1.4rem;flex-wrap:wrap;">
         <button class="btn" onclick="salvarConfig()">✓ Salvar Configurações</button>
         <button class="btn warn" onclick="recalcularTodos()">⟳ Recalcular Todos</button>
-        <button class="btn sec" onclick="migrar()">🔧 Migrar Estrutura</button>
-        <button class="btn danger" onclick="instalarDoZero()">🗑️ Instalar do Zero</button>
       </div>
     </div>
   </div>
@@ -777,8 +784,9 @@ async function salvarRegistro(){
 }
 
 function editarRegistro(id){
-  const reg=_registrosCache.find(r=>r.id===id);
-  if(reg)abrirModal(reg);
+  const reg=_registrosCache.find(r=>String(r.id)===String(id));
+  if(reg){ abrirModal(reg); }
+  else { toast('Registro não encontrado. Recarregue a página.', true); }
 }
 
 async function deletarRegistro(id){
